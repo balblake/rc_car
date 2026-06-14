@@ -13,9 +13,9 @@
 #define BUZZER 25
 #define SERVO_PIN 26
 
-#define MOTOR_IN1 14 
-#define MOTOR_IN2 27 
-#define MOTOR_EN 13  
+#define MOTOR_IN1 14
+#define MOTOR_IN2 27
+#define MOTOR_EN 13
 
 // ==========================================
 // GLOBAL OBJECTS & VARIABLES
@@ -27,16 +27,16 @@ int carSpeed = 255;
 WebServer server(80);
 WebSocketsServer webSocket = WebSocketsServer(81);
 const byte DNS_PORT = 53;
-DNSServer dnsServer; 
+DNSServer dnsServer;
 
 unsigned long previousMicros = 0;
 bool buzzerState = false;
-unsigned long lastCommandTime = 0; 
+unsigned long lastCommandTime = 0;
 
 // ==========================================
 // THE HTML/JS PHONE APP (Plus-Sign Layout)
 // ==========================================
-const char* htmlApp = R"rawliteral(
+const char *htmlApp = R"rawliteral(
 <!DOCTYPE html>
 <html>
 <head>
@@ -50,18 +50,18 @@ const char* htmlApp = R"rawliteral(
     }
     
     .d-pad {
-      display: grid;
-      grid-template-columns: 115px 115px 115px; 
-      grid-template-rows: 115px 115px 115px;    
-      gap: 5px; 
+        display: grid;
+        grid-template-columns: 115px 115px 115px; 
+        grid-template-rows: 115px 115px 115px;    
+        gap: 5px; 
     }
     
     .btn { 
-      background-color: #444; 
-      display: flex; justify-content: center; align-items: center; 
-      font-size: 18px; font-weight: bold;
-      box-shadow: 0 8px 15px rgba(0,0,0,0.5);
-      transition: transform 0.05s, background-color 0.05s; 
+        background-color: #444; 
+        display: flex; justify-content: center; align-items: center; 
+        font-size: 18px; font-weight: bold;
+        box-shadow: 0 8px 15px rgba(0,0,0,0.5);
+        transition: transform 0.05s, background-color 0.05s; 
     }
     
     .btn.active { background-color: #00ff88; color: black; transform: scale(0.90); }
@@ -145,117 +145,136 @@ const char* htmlApp = R"rawliteral(
 // HARDWARE FUNCTIONS
 // ==========================================
 
-long getDistance() {
-  digitalWrite(TRIG_PIN, LOW);
-  delayMicroseconds(2);
-  digitalWrite(TRIG_PIN, HIGH);
-  delayMicroseconds(10);
-  digitalWrite(TRIG_PIN, LOW);
-  long duration = pulseIn(ECHO_PIN, HIGH, 20000); 
-  if (duration == 0) return 999; 
-  return duration * 0.034 / 2;
+long getDistance()
+{
+    digitalWrite(TRIG_PIN, LOW);
+    delayMicroseconds(2);
+    digitalWrite(TRIG_PIN, HIGH);
+    delayMicroseconds(10);
+    digitalWrite(TRIG_PIN, LOW);
+    long duration = pulseIn(ECHO_PIN, HIGH, 20000);
+    if (duration == 0)
+        return 999;
+    return duration * 0.034 / 2;
 }
 
-void stopMotor() {
-  digitalWrite(MOTOR_IN1, LOW);
-  digitalWrite(MOTOR_IN2, LOW);
-  analogWrite(MOTOR_EN, 0); 
-}
-
-void drive(String dir) {
-  if (dir.indexOf("L") != -1) steering.write(32);
-  else if (dir.indexOf("R") != -1) steering.write(122);
-  else steering.write(steerCenter);
-
-  if (dir.indexOf("F") != -1) {
-    digitalWrite(MOTOR_IN1, HIGH);
-    digitalWrite(MOTOR_IN2, LOW);
-    analogWrite(MOTOR_EN, carSpeed);
-  } else if (dir.indexOf("B") != -1) {
+void stopMotor()
+{
     digitalWrite(MOTOR_IN1, LOW);
-    digitalWrite(MOTOR_IN2, HIGH);
-    analogWrite(MOTOR_EN, carSpeed);
-  } else {
-    stopMotor();
-  }
+    digitalWrite(MOTOR_IN2, LOW);
+    analogWrite(MOTOR_EN, 0);
+}
+
+void drive(String dir)
+{
+    if (dir.indexOf("L") != -1)
+        steering.write(32);
+    else if (dir.indexOf("R") != -1)
+        steering.write(122);
+    else
+        steering.write(steerCenter);
+
+    if (dir.indexOf("F") != -1)
+    {
+        digitalWrite(MOTOR_IN1, HIGH);
+        digitalWrite(MOTOR_IN2, LOW);
+        analogWrite(MOTOR_EN, carSpeed);
+    }
+    else if (dir.indexOf("B") != -1)
+    {
+        digitalWrite(MOTOR_IN1, LOW);
+        digitalWrite(MOTOR_IN2, HIGH);
+        analogWrite(MOTOR_EN, carSpeed);
+    }
+    else
+    {
+        stopMotor();
+    }
 }
 
 // ==========================================
 // WEBSOCKET EVENT HANDLER
 // ==========================================
-void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length) {
-  if (type == WStype_TEXT) {
-    String command = (char*)payload;
-    lastCommandTime = millis(); 
-    drive(command);
-  }
+void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t length)
+{
+    if (type == WStype_TEXT)
+    {
+        String command = (char *)payload;
+        lastCommandTime = millis();
+        drive(command);
+    }
 }
 
 // ==========================================
 // MAIN SETUP
 // ==========================================
-void setup() {
-  Serial.begin(115200);
-  
-  pinMode(TRIG_PIN, OUTPUT);
-  pinMode(ECHO_PIN, INPUT);
-  pinMode(BUZZER, OUTPUT);
-  pinMode(MOTOR_IN1, OUTPUT);
-  pinMode(MOTOR_IN2, OUTPUT);
-  pinMode(MOTOR_EN, OUTPUT);
-  
-  ESP32PWM::allocateTimer(0);
-  steering.setPeriodHertz(50);
-  steering.attach(SERVO_PIN, 500, 2400);
-  steering.write(steerCenter);
-  stopMotor();
+void setup()
+{
+    Serial.begin(115200);
 
-  Serial.println("Starting Wi-Fi Access Point...");
-  WiFi.softAP("rc_car");
-  IPAddress IP = WiFi.softAPIP();
-  
-  dnsServer.start(DNS_PORT, "*", IP);
+    pinMode(TRIG_PIN, OUTPUT);
+    pinMode(ECHO_PIN, INPUT);
+    pinMode(BUZZER, OUTPUT);
+    pinMode(MOTOR_IN1, OUTPUT);
+    pinMode(MOTOR_IN2, OUTPUT);
+    pinMode(MOTOR_EN, OUTPUT);
 
-  server.on("/", []() {
-    server.send(200, "text/html", htmlApp);
-  });
-  
-  server.onNotFound([]() {
-    server.send(200, "text/html", htmlApp);
-  });
-  
-  server.begin();
+    ESP32PWM::allocateTimer(0);
+    steering.setPeriodHertz(50);
+    steering.attach(SERVO_PIN, 500, 2400);
+    steering.write(steerCenter);
+    stopMotor();
 
-  webSocket.begin();
-  webSocket.onEvent(webSocketEvent);
+    Serial.println("Starting Wi-Fi Access Point...");
+    WiFi.softAP("rc_car");
+    IPAddress IP = WiFi.softAPIP();
 
-  Serial.println("System Ready!");
+    dnsServer.start(DNS_PORT, "*", IP);
+
+    server.on("/", []()
+              { server.send(200, "text/html", htmlApp); });
+
+    server.onNotFound([]()
+                      { server.send(200, "text/html", htmlApp); });
+
+    server.begin();
+
+    webSocket.begin();
+    webSocket.onEvent(webSocketEvent);
+
+    Serial.println("System Ready!");
 }
 
 // ==========================================
 // MAIN LOOP
 // ==========================================
-void loop() {
-  dnsServer.processNextRequest(); 
-  webSocket.loop();               
-  server.handleClient();          
+void loop()
+{
+    dnsServer.processNextRequest();
+    webSocket.loop();
+    server.handleClient();
 
-  // Dead Man's Switch (500ms timeout)
-  if (millis() - lastCommandTime > 500) {
-    stopMotor();
-    steering.write(steerCenter);
-  }
-
-  // Safety Distance Check (Warning Alarm ONLY)
-  long distance = getDistance();
-  if (distance > 0 && distance < 4) {
-    if (micros() - previousMicros >= 100) {
-      previousMicros = micros();
-      buzzerState = !buzzerState;
-      digitalWrite(BUZZER, buzzerState); 
+    // Dead Man's Switch (500ms timeout)
+    if (millis() - lastCommandTime > 500)
+    {
+        stopMotor();
+        steering.write(steerCenter);
     }
-    // Note: I deleted the two motor override lines from here!
-  } else {
-    digitalWrite(BUZZER, LOW);
-  }
+
+    // Safety Distance Check (Warning Alarm ONLY)
+    long distance = getDistance();
+    if (distance > 0 && distance < 4)
+    {
+        if (micros() - previousMicros >= 100)
+        {
+            previousMicros = micros();
+            buzzerState = !buzzerState;
+            digitalWrite(BUZZER, buzzerState);
+        }
+        // Note: I deleted the two motor override lines from here!
+    }
+    else
+    {
+        digitalWrite(BUZZER, LOW);
+    }
 }
