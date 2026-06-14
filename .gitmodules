@@ -1,0 +1,3 @@
+[submodule "rc_car_kicad"]
+	path = rc_car_kicad
+	url = https://github.com/balblake/rc_car_kicad
