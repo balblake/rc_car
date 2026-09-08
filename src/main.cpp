@@ -5,9 +5,7 @@
 #include <ESP32Servo.h>
 #include <DNSServer.h>
 
-// ==========================================
-// PIN DEFINITIONS (ESP32)
-// ==========================================
+// ESP32
 #define TRIG_PIN 32
 #define ECHO_PIN 33
 #define BUZZER 25
@@ -17,25 +15,23 @@
 #define MOTOR_IN2 27
 #define MOTOR_EN 13
 
-// ==========================================
-// GLOBAL OBJECTS & VARIABLES
-// ==========================================
+// Servo
 Servo steering;
 int steerCenter = 77;
 int carSpeed = 255;
 
+// WebSocket
 WebServer server(80);
 WebSocketsServer webSocket = WebSocketsServer(81);
 const byte DNS_PORT = 53;
 DNSServer dnsServer;
 
+// hardware/safety
 unsigned long previousMicros = 0;
 bool buzzerState = false;
 unsigned long lastCommandTime = 0;
 
-// ==========================================
-// THE HTML/JS PHONE APP (Plus-Sign Layout)
-// ==========================================
+// controls layout
 const char *htmlApp = R"rawliteral(
 <!DOCTYPE html>
 <html>
@@ -141,10 +137,7 @@ const char *htmlApp = R"rawliteral(
 </html>
 )rawliteral";
 
-// ==========================================
-// HARDWARE FUNCTIONS
-// ==========================================
-
+// hardware values
 long getDistance()
 {
     digitalWrite(TRIG_PIN, LOW);
@@ -192,9 +185,7 @@ void drive(String dir)
     }
 }
 
-// ==========================================
-// WEBSOCKET EVENT HANDLER
-// ==========================================
+// WebSocket Event Handler
 void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t length)
 {
     if (type == WStype_TEXT)
@@ -205,9 +196,7 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t length)
     }
 }
 
-// ==========================================
-// MAIN SETUP
-// ==========================================
+// main
 void setup()
 {
     Serial.begin(115200);
@@ -245,23 +234,21 @@ void setup()
     Serial.println("System Ready!");
 }
 
-// ==========================================
-// MAIN LOOP
-// ==========================================
+// loop
 void loop()
 {
     dnsServer.processNextRequest();
     webSocket.loop();
     server.handleClient();
 
-    // Dead Man's Switch (500ms timeout)
+    // dead man's switch
     if (millis() - lastCommandTime > 500)
     {
         stopMotor();
         steering.write(steerCenter);
     }
 
-    // Safety Distance Check (Warning Alarm ONLY)
+    // distance sensor
     long distance = getDistance();
     if (distance > 0 && distance < 4)
     {
@@ -271,7 +258,6 @@ void loop()
             buzzerState = !buzzerState;
             digitalWrite(BUZZER, buzzerState);
         }
-        // Note: I deleted the two motor override lines from here!
     }
     else
     {
